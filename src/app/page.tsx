@@ -13,8 +13,9 @@ type Grid = Box[][]
 
 export default function Home() {
   //Grid 20x20
-  const columns = 5
+  const columns = 20
   const [grid, setGrid] = useState<Grid>([[{row: 1, col: 1, isAlive: false}]]) 
+  const [isPlaying, setIsPlaying] = useState<boolean>(false) 
 
   const generateRow = (cols: number, row: number) => {
     const currentRow: Row = []
@@ -55,7 +56,7 @@ export default function Home() {
   // +3 o -2 muere
   // muerta con +3 revive
 
-  const liveGame = (row: Box['row'], col: Box['row'], vivo: Box['isAlive']) => {
+  const liveGame = (row: Box['row'], col: Box['row'], alive: Box['isAlive']) => {
     let alivedNightmares = 0
     if(row > 0) {
       grid[row-1][col].isAlive && alivedNightmares++
@@ -71,8 +72,8 @@ export default function Home() {
       if(col > 0) grid[row+1][col-1].isAlive && alivedNightmares++
       if(col < columns - 1) grid[row+1][col+1].isAlive && alivedNightmares++
     }
-    console.log(alivedNightmares)
-    if(vivo) {
+
+    if(alive) {
       console.log(alivedNightmares >= 2 && alivedNightmares <= 3)
       return alivedNightmares >= 2 && alivedNightmares <= 3
     } else {
@@ -80,44 +81,30 @@ export default function Home() {
     }
   }
 
-  const updateGrid = (grid: Grid, columns: number) => {
-    const newGrid: Grid = grid.map(row => row.map(box => ({ ...box })));
-    for(let i = 0; i < columns; i++) {
-      for(let j = 0; j < columns; j++) {
-        newGrid[i][j].isAlive = liveGame(i, j, grid[i][j].isAlive)
-      }
+  useEffect(() => {
+    let time: NodeJS.Timeout;
+  
+    const updateGridCallback = () => {
+      setGrid((prevGrid) => {
+        const newGrid: Grid = prevGrid.map(row => row.map(box => ({ ...box })));
+        for (let i = 0; i < columns; i++) {
+          for (let j = 0; j < columns; j++) {
+            newGrid[i][j].isAlive = liveGame(i, j, prevGrid[i][j].isAlive);
+          }
+        }
+        return newGrid;
+      });
+    };
+  
+    if (isPlaying) {
+      time = setInterval(updateGridCallback, 250);
     }
-    setGrid(newGrid)
-    console.log('updated')
-  }
-
-/*   const updateGrid = (grid: Grid, columns: number) => {
-    let nei = 0
-    const newGrid: Grid = grid.map(row => row.map(box => ({ ...box })));
-    grid.forEach((e, ix) => {
-      e.forEach((x, i) => {
-        nei += +(e[i-1].isAlive === true) 
-        nei += +(e[i+1].isAlive === true) 
-        if(ix > 0) {
-          nei += +(newGrid[ix-1][i].isAlive === true)
-          nei += +(newGrid[ix-1][i-1].isAlive === true)
-          nei += +(newGrid[ix-1][i+1].isAlive === true)
-        }
-        if(ix < columns - 1) {
-          nei += +(newGrid[ix+1][i].isAlive === true)
-          nei += +(newGrid[ix+1][i-1].isAlive === true)
-          nei += +(newGrid[ix+1][i+1].isAlive === true)
-        }
-        if(x.isAlive) {
-          newGrid[ix][i].isAlive = (nei >= 2 && nei <= 3)
-        } else {
-          newGrid[ix][i].isAlive = (nei >= 3)
-        }
-      })
-    })
-    setGrid(newGrid)
-    console.log('updated')
-  } */
+  
+    return () => {
+      clearInterval(time);
+    };
+  }, [isPlaying, grid, columns]);
+    
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -139,7 +126,7 @@ export default function Home() {
           </div>
         )}
       </div>
-        <button onClick={() => updateGrid(grid, columns)}>Start</button>
+        <button onClick={() => setIsPlaying(!isPlaying)}>Start</button>
     </main>
   );
 }
