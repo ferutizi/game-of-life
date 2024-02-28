@@ -1,5 +1,6 @@
 'use client'
 
+import { time } from "console";
 import { useState, useEffect } from "react";
 
 type Box = { 
@@ -13,30 +14,31 @@ type Grid = Box[][]
 
 export default function Home() {
   //Grid 20x20
-  const columns = 20
+  const gridRows = 60
+  const gridCols = 120
   const [grid, setGrid] = useState<Grid>([[{row: 1, col: 1, isAlive: false}]]) 
   const [isPlaying, setIsPlaying] = useState<boolean>(false) 
 
   const generateRow = (cols: number, row: number) => {
     const currentRow: Row = []
     for(let i = 0; i < cols; i++) {
-/*       const isAlive = grid ? (grid[row][i]?.isAlive || false) : false; */
-      currentRow.push({row: row, col: i, isAlive: false /* isAlive */})
+      currentRow.push({ row: row, col: i, isAlive: false })
     }
     return currentRow
   } 
 
   useEffect(() => {
-    const newGrid = generateGrid(columns)
+    const newGrid = generateGrid(gridRows, gridCols)
     setGrid(newGrid)
   }, [])
 
-  const generateGrid = (rows: number): Grid => {
+  const generateGrid = (rows: number, cols: number): Grid => {
     const grid: Grid = []
-    for(let i = 0; i < rows; i++) {
+    for(let i = 0; i < cols; i++) {
       const row = generateRow(rows, i)
       grid.push(row)
     }
+    console.log(grid)
     return grid
   }
 
@@ -57,27 +59,20 @@ export default function Home() {
   // muerta con +3 revive
 
   const liveGame = (row: Box['row'], col: Box['row'], alive: Box['isAlive']) => {
-    let alivedNightmares = 0
-    if(row > 0) {
-      grid[row-1][col].isAlive && alivedNightmares++
-      if(col > 0) grid[row-1][col-1].isAlive && alivedNightmares++
-      if(col < columns - 1) grid[row-1][col+1].isAlive && alivedNightmares++
-    }
+    let alivedNeighbor = 0
 
-    if(col > 0) grid[row][col-1].isAlive && alivedNightmares++
-    if(col < columns - 1) grid[row][col+1].isAlive && alivedNightmares++
-
-    if(row < columns - 1) {
-      grid[row+1][col].isAlive && alivedNightmares++
-      if(col > 0) grid[row+1][col-1].isAlive && alivedNightmares++
-      if(col < columns - 1) grid[row+1][col+1].isAlive && alivedNightmares++
+    for (let i = Math.max(0, row - 1); i <= Math.min(gridCols - 1, row + 1); i++) {
+      for (let j = Math.max(0, col - 1); j <= Math.min(gridRows - 1, col + 1); j++) {
+        if (!(i === row && j === col)) {
+          alivedNeighbor += grid[i][j].isAlive ? 1 : 0;
+        }
+      }
     }
 
     if(alive) {
-      console.log(alivedNightmares >= 2 && alivedNightmares <= 3)
-      return alivedNightmares >= 2 && alivedNightmares <= 3
+      return alivedNeighbor >= 2 && alivedNeighbor <= 3
     } else {
-      return alivedNightmares >= 3
+      return alivedNeighbor >= 3
     }
   }
 
@@ -85,40 +80,42 @@ export default function Home() {
     let time: NodeJS.Timeout;
   
     const updateGridCallback = () => {
+      console.time('loop')
       setGrid((prevGrid) => {
         const newGrid: Grid = prevGrid.map(row => row.map(box => ({ ...box })));
-        for (let i = 0; i < columns; i++) {
-          for (let j = 0; j < columns; j++) {
+        for (let i = 0; i < gridCols; i++) {
+          for (let j = 0; j < gridRows; j++) {
             newGrid[i][j].isAlive = liveGame(i, j, prevGrid[i][j].isAlive);
           }
         }
         return newGrid;
       });
+      console.timeEnd('loop')
     };
   
     if (isPlaying) {
-      time = setInterval(updateGridCallback, 250);
+      time = setInterval(updateGridCallback, 500);
     }
   
     return () => {
       clearInterval(time);
     };
-  }, [isPlaying, grid, columns]);
+  }, [isPlaying, grid, gridCols]);
     
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h1>Game of life</h1>
-      <div className="flex flex-wrap">
+      <div className="flex gap-1">
         {grid?.map(e => 
-          <div>
+          <div className="flex flex-col gap-1">
             {
               e.map(x =>   
                 <div 
                 key={`${x.row}-${x.col}`}
                 {...{ "data-isalive": x.isAlive}}
                 onClick={() => handleLife(x.row, x.col, x.isAlive)}
-                className={`w-4 h-4 border hover:bg-slate-400 border-black cursor-pointer ${x.isAlive ? 'bg-slate-900' : 'bg-slate-200'}`}
+                className={`w-5 h-5 borde hover:bg-slate-500 border-black cursor-pointer ${x.isAlive ? 'bg-slate-900' : 'bg-slate-300'}`}
                 >
                 </div>
               )
