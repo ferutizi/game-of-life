@@ -1,130 +1,22 @@
 'use client'
 
 import { useState, useEffect } from "react";
-
-type Cell = { 
-  row: number,
-  col: number,
-  isAlive: boolean
-}
-
-type Row = Cell[]
-type Grid = Cell[][]
+import useGrid from "./hooks/useGrid";
 
 export default function Home() {
-  //Grid 20x20
-  const gridRows = 42
-  const gridCols = 90
-  const [grid, setGrid] = useState<Grid>([[]]) 
-  const [isPlaying, setIsPlaying] = useState<boolean>(false) 
 
-  const generateRow = (cols: number, row: number) => {
-    const currentRow: Row = []
-    for(let i = 0; i < cols; i++) {
-      currentRow.push({ row: row, col: i, isAlive: false })
-    }
-    return currentRow
-  } 
+  const [grid, isPlaying, pauseGame, resetGame, nextStep, handleLife] = useGrid()
 
-  useEffect(() => {
-    const newGrid = generateGrid(gridRows, gridCols)
-    setGrid(newGrid)
-  }, [])
-
-  const generateGrid = (rows: number, cols: number): Grid => {
-    const grid: Grid = []
-    for(let i = 0; i < cols; i++) {
-      const row = generateRow(rows, i)
-      grid.push(row)
-    }
-    console.log(grid)
-    return grid
-  }
-
-  const handleLife = (row: Cell['row'], col: Cell['col'], isAlive: Cell['isAlive']) => {
-    setGrid((prevGrid) => {
-      if (prevGrid && prevGrid[row] && prevGrid[row][col]) {
-        const newGrid = [...prevGrid];
-        newGrid[row][col] = { ...prevGrid[row][col], isAlive: !isAlive };
-        return newGrid;
-      }
-      return prevGrid;
-    });
-  }
-
-  // si 2 o 3 permanece viva
-  // +3 o -2 muere
-  // muerta con +3 revive
-
-  const liveGameRules = (row: Cell['row'], col: Cell['col'], alive: Cell['isAlive']) => {
-    let alivedNeighbor = 0
-
-    for (let i = Math.max(0, row - 1); i <= Math.min(gridCols - 1, row + 1); i++) {
-      for (let j = Math.max(0, col - 1); j <= Math.min(gridRows - 1, col + 1); j++) {
-        if (!(i === row && j === col)) {
-          alivedNeighbor += grid[i][j].isAlive ? 1 : 0;
-        }
-      }
-    }
-
-    if(alive) {
-      return alivedNeighbor >= 2 && alivedNeighbor <= 3
-    } else {
-      return alivedNeighbor === 3
-    }
-  }
-
-  const updateGrid = () => {
-    setGrid((prevGrid) => {
-      const newGrid: Grid = prevGrid.map(row => row.map(box => ({ ...box })));
-      for (let i = 0; i < gridCols; i++) {
-        for (let j = 0; j < gridRows; j++) {
-          newGrid[i][j].isAlive = liveGameRules(i, j, prevGrid[i][j].isAlive);
-        }
-      }
-      return newGrid;
-    });
-  }
-
-  useEffect(() => {
-    let time: NodeJS.Timeout;
-  
-    const updateGridCallback = () => {
-      updateGrid()
-    };
-  
-    if (isPlaying) {
-      time = setInterval(updateGridCallback, 50);
-    }
-  
-    return () => {
-      clearInterval(time);
-    };
-  }, [isPlaying, grid, gridCols]);
-
-  const resetGame = () => {
-    setGrid((prevGrid) => {
-      const newGrid: Grid = prevGrid.map(row => row.map(box => ({ ...box })));
-      newGrid.forEach(e => {
-        e.forEach(x => x.isAlive = false)
-      })
-      return newGrid;
-    })
-  }
-
-  const nextStep = () => {
-    updateGrid()
-  }
+  const btnStyle = 'border border-slate-400 rounded-lg px-4 py-1 shadow hover:bg-slate-400 active:shadow-none font-semibold'
     
-
   return (
     <main className="flex h-screen flex-col items-center w-full bg-stone-900">
       <header className="flex items-center bg-slate-300 text-black h-16 w-screen">
-        <h1 className="ml-4">Game of life</h1>
-        <div className="flex gap-4 mx-auto">
-          <button onClick={() => setIsPlaying(!isPlaying)}>{isPlaying ? 'Stop' : 'Start'}</button>
-          <button onClick={() => resetGame()}>Reset</button>
-          <button onClick={() => nextStep()}>Next</button>
+        <h1 className="ml-6 text-2xl font-semibold">Game of Life</h1>
+        <div className="flex gap-6 mx-auto -translate-x-24">
+          <button className={btnStyle} onClick={() => pauseGame()}>{isPlaying ? 'Stop' : 'Start'}</button>
+          <button className={btnStyle} onClick={() => resetGame()}>Reset</button>
+          <button className={btnStyle} onClick={() => nextStep()}>Next</button>
         </div>
       </header>
       { grid.length > 1 
@@ -145,7 +37,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      : <div>Loading...</div> 
+      : <div className='m-auto text-white text-xl'>Loading...</div> 
       }
     </main>
   );
