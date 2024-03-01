@@ -9,11 +9,14 @@ type Cell = {
 type Row = Cell[]
 type Grid = Cell[][]
 
+export type Speed = 100 | 250 | 500
+
 export default function useGrid() {
   const gridRows = 42
   const gridCols = 90
   const [grid, setGrid] = useState<Grid>([[]]) 
   const [isPlaying, setIsPlaying] = useState<boolean>(false) 
+  const [speed, setSpeed] = useState(250)
   
   const generateRow = (cols: number, row: number) => {
     const currentRow: Row = []
@@ -63,7 +66,7 @@ export default function useGrid() {
     if(alive) {
       return alivedNeighbor >= 2 && alivedNeighbor <= 3
     } else {
-      return alivedNeighbor === 3
+      return alivedNeighbor >= 3
     }
   }
   
@@ -82,13 +85,13 @@ export default function useGrid() {
   useEffect(() => {
     let time: NodeJS.Timeout;
     if (isPlaying) {
-      time = setInterval(updateGrid, 50);
+      time = setInterval(updateGrid, speed);
     }
   
     return () => {
       clearInterval(time);
     };
-  }, [isPlaying, grid, gridCols]);
+  }, [isPlaying, grid, gridCols, speed]);
   
   const resetGame = () => {
     setGrid((prevGrid) => {
@@ -109,5 +112,13 @@ export default function useGrid() {
     updateGrid()
   }
 
-  return[grid, isPlaying, pauseGame, resetGame, nextStep, handleLife] as const
+  const changeSpeed = () => {
+    setSpeed(prevS => {
+      if(prevS === 250) return(500)
+      if(prevS === 100) return(250)
+      if(prevS === 500) return(100)
+      return prevS
+    })
+  };
+  return[grid, isPlaying, pauseGame, resetGame, nextStep, handleLife, changeSpeed, speed] as const
 }
